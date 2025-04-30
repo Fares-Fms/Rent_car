@@ -13,9 +13,11 @@ namespace test1.APIController
     public class SettingsController : ControllerBase
     {
         Isettings ClsSettings;
-        public SettingsController(Isettings isettings)
+        IReview ClsReview;
+        public SettingsController(Isettings isettings,IReview review)
         {
             ClsSettings = isettings;
+            ClsReview = review;
         }
 
         [HttpGet("Show")]
@@ -39,7 +41,7 @@ namespace test1.APIController
         [HttpPost("Edit")]
         [Authorize(Roles = "Admin")]
         public async Task<ApiResponse> Edit(
-          [FromBody] TbSetting? setting,
+          [FromForm] TbSetting? setting,
           [FromForm] List<IFormFile>? favicon,
           [FromForm] List<IFormFile>? Logo,
           [FromForm] List<IFormFile>? HomeImg1,
@@ -52,18 +54,18 @@ namespace test1.APIController
             {
                 if (setting == null)
                 {
-                    response.errorMessage = "error in data";
+                    response.errorMessage = "خطأ بالبيانات";
                     response.status = 400;
                     return response;
                 }
                         
 
              
-                setting.Logo = await bL.TryUpload(Logo,"Settings", setting.Logo);
-                setting.Favicon = await bL.TryUpload(favicon, "Settings", setting.Favicon);
-                setting.HomeImg1 = await bL.TryUpload(HomeImg1, "Settings", setting.HomeImg1);
-                setting.HomeImg2 = await bL.TryUpload(HomeImg2, "Settings", setting.HomeImg2);
-                setting.HomeImg3 = await bL.TryUpload(HomeImg3, "Settings", setting.HomeImg3);
+                setting.Logo = await bL.TryUpload(Logo, setting.Logo);
+                setting.Favicon = await bL.TryUpload(favicon, setting.Favicon);
+                setting.HomeImg1 = await bL.TryUpload(HomeImg1, setting.HomeImg1);
+                setting.HomeImg2 = await bL.TryUpload(HomeImg2, setting.HomeImg2);
+                setting.HomeImg3 = await bL.TryUpload(HomeImg3, setting.HomeImg3);
 
                 response.data = ClsSettings.Edit(setting);
                 response.status = 200;
@@ -77,33 +79,24 @@ namespace test1.APIController
             }
         }
 
-        private async Task<string> TryUpload(List<IFormFile>? files, string PathName, string currentValue)
+        [HttpGet("ShowFiveStars")]
+        [AllowAnonymous]
+        public ApiResponse ShowFiveStars()
         {
-            if (files != null && files.Any(f => f.Length > 0))
+            ApiResponse response = new ApiResponse();
+            try
             {
-                return await UploadImage(files,PathName);
+                response.data = ClsReview.Get5Stars();
+                response.status = 200;
+                return response;
             }
-            return currentValue;
-        }
-
-        private async Task<string> UploadImage(List<IFormFile> files,string PathName)
-        {
-            foreach (var file in files)
+            catch (Exception ex)
             {
-                if (file.Length > 0)
-                {
-                    string imageName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                    string path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads",PathName , imageName);
+                response.errorMessage = ex.Message;
+                return response;
 
-                    using (var stream = new FileStream(path, FileMode.Create))
-                    {
-                        await file.CopyToAsync(stream);
-                    }
-
-                    return imageName;
-                }
             }
-            return "";
+
         }
     }
 }

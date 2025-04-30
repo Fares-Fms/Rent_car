@@ -10,7 +10,6 @@ namespace test1.APIController
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class ADController : ControllerBase
     {
         IAd ClsAd;

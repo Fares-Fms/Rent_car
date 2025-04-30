@@ -237,9 +237,10 @@ namespace test1.Migrations
                         .HasColumnType("datetime")
                         .HasColumnName("Created_date");
 
-                    b.Property<int>("IsPublic")
-                        .HasColumnType("int")
-                        .HasColumnName("Is_Public");
+                    b.Property<string>("IsPublic")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("IsPublic");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -257,12 +258,7 @@ namespace test1.Migrations
                         .HasColumnType("datetime")
                         .HasColumnName("updated_date");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)")
-                        .HasColumnName("User_ID");
-
+               
                     b.HasKey("Id");
 
                     b.ToTable("TbReviews");

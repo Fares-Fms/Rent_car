@@ -1,4 +1,5 @@
 ﻿using Azure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -18,25 +19,25 @@ namespace test1.APIController
         RentCarContext context;
         UserManager<ApplicationUser> userManager;
         ICar ClsCar;
-        IReview Review;
+        IReview ClsReview;
         public CarController(RentCarContext rentCar,UserManager<ApplicationUser> user,ICar icar,IReview review)
         {
             context = rentCar;
             userManager = user;
             ClsCar = icar;
-            Review = review;
+            ClsReview = review;
         }
         [HttpPost("EditCar/{Id}")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<ApiResponse> EditCar(int id)
         {
             ApiResponse response = new ApiResponse();
             try
             {
-                var existingCar = ClsCar.GetById(id);
+                var existingCar = ClsCar.ShowCar(id);
                 if (existingCar == null || existingCar.Status == "Deleted" || existingCar.Sold == 1)
                 {
-                    response.errorMessage = "car not found";
+                    response.errorMessage = "السيارة غير موجودة";
                     response.status = 405;
                  
                 }
@@ -54,32 +55,32 @@ namespace test1.APIController
             return response;
         }
 
-        [HttpPost("SaveEditCar")]
-        [Authorize]
-        public async Task<ApiResponse> SaveEditCar([FromForm] TbCar? car, [FromForm] List<IFormFile>? File1, [FromForm] List<IFormFile>? File2, [FromForm] List<IFormFile>? File3)
+        [HttpPost("SaveEditCar/{Id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<ApiResponse> SaveEditCar([FromRoute]int Id, [FromForm] TbCar? car, [FromForm] List<IFormFile>? File1, [FromForm] List<IFormFile>? File2, [FromForm] List<IFormFile>? File3)
         {
             BL bL = new BL();
             ApiResponse apiResponse = new ApiResponse();
             if (!ModelState.IsValid)
             {
-                apiResponse.errorMessage = "Invalid input";
+                apiResponse.errorMessage = "ادخال خاطئ";
                 return apiResponse;
             }
             try
             {
                 var userid = userManager.GetUserId(User);
-           
+                var newCar = ClsCar.ShowCar(Id);
 
-                if (car.UserId == userid)
+                if (newCar.UserId == userid)
                 {
                   
-                        car.Img1 = await bL.TryUpload(File1, "car",car.Img1);
+                        car.Img1 = await bL.TryUpload(File1,car.Img1);
 
                    
-                        car.Img2 = await bL.TryUpload(File2, "car", car.Img2);
+                        car.Img2 = await bL.TryUpload(File2, car.Img2);
 
                 
-                        car.Img3 = await bL.TryUpload(File3, "car", car.Img3);
+                        car.Img3 = await bL.TryUpload(File3, car.Img3);
 
                     
                     car.UpdateDate = DateTime.Now;
@@ -89,28 +90,41 @@ namespace test1.APIController
                 }
                 else
                 {
-                    apiResponse.errorMessage = "You are not the owner";
+                    apiResponse.errorMessage = "انت لست مالك السيارة";
                     apiResponse.status = 400;
                     return apiResponse;
                 }
-                apiResponse.data = "done";
+                apiResponse.data = "تم التعديل بنجاح";
                 apiResponse.status = 200;
-                return apiResponse;
             }
             catch (Exception ex)
             {
                 apiResponse.errorMessage = ex.Message;
-                apiResponse.data = null;
 
-                return apiResponse;
+                // Cleanup uploaded image if creation failed
+                if (!string.IsNullOrEmpty(car.Img1))
+                {
+                    await bL.DeleteImageAsync(car.Img1);
+                }
+
+                if (!string.IsNullOrEmpty(car.Img2))
+                {
+                    await bL.DeleteImageAsync(car.Img2);
+                }
+                if (!string.IsNullOrEmpty(car.Img3))
+                {
+                    await bL.DeleteImageAsync(car.Img3);
+                }
             }
+                return apiResponse;
 
         }
 
 
 
         [HttpPost("AddCar")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+
         public async Task<ApiResponse> AddCar([FromForm] TbCar car, [FromForm] List<IFormFile> File1 , [FromForm] List<IFormFile> File2, [FromForm] List<IFormFile> File3)
         {
             BL bL = new BL(); 
@@ -119,32 +133,44 @@ namespace test1.APIController
             {
 
                 apiResponse.status = Unauthorized();
-                apiResponse.errorMessage = "Invalid input";
+                apiResponse.errorMessage = "ادخال غير صحيح";
                 return apiResponse;
             }
             try
             {
-                car.Img1=await bL.UploadImage(File1,"car");
-                car.Img2=await bL.UploadImage(File2, "car");
-                car.Img3=await bL.UploadImage(File3, "car");
+                car.Img1=await bL.UploadImage(File1);
+                car.Img2=await bL.UploadImage(File2);
+                car.Img3=await bL.UploadImage(File3);
                 var userid = userManager.GetUserId(User);
                 car.UserId = userid;
                 car.CreateDate = DateTime.Now;
-                car.Status = "Available";
+                car.IsDeleted = false;
                 context.TbCars.Add(car);
                 await context.SaveChangesAsync();
-                apiResponse.data = "done";
+                apiResponse.data = "تم اضافة السيارة بنجاح";
                 apiResponse.status = 200;
-                return apiResponse;
+            
             }
-            catch(Exception ex) 
+            catch (Exception ex)
             {
-                apiResponse.errorMessage=ex.Message;
-                apiResponse.data=null;
-             
-                return apiResponse;
+                apiResponse.errorMessage = ex.Message;
+
+                // Cleanup uploaded image if creation failed
+                if (!string.IsNullOrEmpty(car.Img1))
+                {
+                    await bL.DeleteImageAsync(car.Img1);
+                }
+
+                if (!string.IsNullOrEmpty(car.Img2))
+                {
+                    await bL.DeleteImageAsync(car.Img2);
+                }
+                if (!string.IsNullOrEmpty(car.Img3))
+                {
+                    await bL.DeleteImageAsync(car.Img3);
+                }
             }
-           
+            return apiResponse;
         }
 
 
@@ -164,13 +190,13 @@ namespace test1.APIController
                 var userid = await userManager.FindByIdAsync(model.Car.UserId);
                 
                 model.User = SellerProfile(userid);
-                model.Reviews = Review.GetReviews(car.UserId);
+                model.Reviews = ClsReview.GetReviews(car.Id);
                 apiResponse.data = model;
                 apiResponse.status=200;
                 }
                 else
                 {
-                    apiResponse.errorMessage = "This car is not available";
+                    apiResponse.errorMessage = "السيارة غير موجودة";
                     apiResponse.status = 400;
                 }
 
@@ -202,10 +228,12 @@ namespace test1.APIController
             return apiResponse;
         }
 
+    
+
 
 
         [HttpPost("Delete/{Id}")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public ApiResponse DeleteCar(int Id)
         {
             ApiResponse apiResponse = new ApiResponse();
@@ -216,7 +244,7 @@ namespace test1.APIController
                 var car = ClsCar.ShowCar(Id);
                 if (car.UserId == userid)
                 {
-                    car.Status = "0";
+                    car.Status = "Deleted";
                     context.Entry(car).State = EntityState.Modified;
                     context.SaveChanges();
                     apiResponse.data = "done";
@@ -225,7 +253,7 @@ namespace test1.APIController
                 }
                 else
                 {
-                    apiResponse.errorMessage = "you are not the owner of this car";
+                    apiResponse.errorMessage = "انت لست مالك السيارة ";
                     apiResponse.status = "400";
                     return apiResponse;
                 }
@@ -290,12 +318,13 @@ namespace test1.APIController
 
 
         [HttpGet("ShowSixCars/{Id}/{UserId?}")]
-        public ApiResponse ShowSixCars(int Id,string? UserId)
+        public ApiResponse ShowEightCars(int Id,string? UserId)
         {
                 ApiResponse response = new ApiResponse();
             try
             {
-                response.data = ClsCar.ShowSixCars(Id,UserId);
+ 
+                response.data = ClsCar.ShowEightCars(Id, UserId);
                 response.status= 200;
                 return response;
             }
@@ -327,7 +356,7 @@ namespace test1.APIController
 
 
         [HttpPost("Sold/{Id}")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public ApiResponse Sold(int id)
         {
             ApiResponse response = new ApiResponse();
@@ -346,7 +375,23 @@ namespace test1.APIController
             }
         }
 
-  
+        [HttpPost("AddComment/{carId}")]
+
+        public ApiResponse AddComment([FromRoute]int carId,[FromBody] TbReview review)
+        {
+            ApiResponse response = new ApiResponse();
+            try
+            {
+                response.data = ClsReview.AddReview(review, carId);
+                response.status = 200;
+            }
+            catch (Exception ex)
+            {
+                response.errorMessage = ex.Message;
+            }
+            return response;
+
+        }
 
 
         public SellerModel SellerProfile(ApplicationUser applicationUser)
@@ -359,12 +404,14 @@ namespace test1.APIController
                     Name = applicationUser.UserName,
                     phone = applicationUser.PhoneNumber,
                     Picture = applicationUser.ProfileImage,
-
+                    city =applicationUser.city
+                    
                 };
                 return model;
 
             }
             return new SellerModel();
         }
+
     }
 }

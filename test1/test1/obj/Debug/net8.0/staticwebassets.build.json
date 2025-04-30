@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "irzy7ycafurahzs3Tl1lQzASUKcd1tJDo+AczLie2k8=",
+  "Hash": "DyI9jmjUIswMwOZLvzrY+YgDNrn0TfB14z5/QG1He3E=",
   "Source": "test1",
   "BasePath": "_content/test1",
   "Mode": "Default",
@@ -1193,6 +1193,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\lib\\jquery-validation-unobtrusive\\LICENSE.txt"
+    },
+    {
+      "Identity": "C:\\Users\\ASUS\\source\\repos\\test1\\test1\\wwwroot\\Upload\\b99f8b68-58fd-43e4-928c-23d11c287c53.png",
+      "SourceId": "test1",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\ASUS\\source\\repos\\test1\\test1\\wwwroot\\",
+      "BasePath": "_content/test1",
+      "RelativePath": "Upload/b99f8b68-58fd-43e4-928c-23d11c287c53.png",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\Upload\\b99f8b68-58fd-43e4-928c-23d11c287c53.png"
     }
   ]
 }

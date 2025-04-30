@@ -6,5 +6,6 @@
         public string Name { get; set; }
         public string? Picture { get; set; }
         public string phone { get; set; }
+        public string city { get; set; }
     }
 }

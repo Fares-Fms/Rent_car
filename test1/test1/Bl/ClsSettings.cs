@@ -20,7 +20,7 @@ namespace test1.Bl
         {
             try
             {
-                var settings = context.TbSettings.FirstOrDefault();
+                var settings = context.TbSettings.Single();
                 return settings;
 
             }

@@ -10,21 +10,23 @@ namespace test1.Bl
     {
         public TbCar ShowCar(int Id);
         public List<TbCar> ShowALLCars(string? Id);
-        public List<TbCar> ShowSixCars(int Counter,string? userId);
+        public List<PageCarModel> ShowEightCars(int Counter, string? userId);
         public List<TbCar> ShowLatestCars();
         public int Count(string? userId);
         public List<TbCar> ShowFilteredCars(FilterCarModel car);
-        public bool DeleteCar(int Id);
-        public bool Sold(int id,string userid);
-      public TbCar GetById(int id);
+        public string DeleteCar(int Id);
+        public String Sold(int id,string userid);
+     
 
     }
     public class ClsCars : ICar
     {
         RentCarContext context;
-        public ClsCars(RentCarContext _context)
+        IReview ClsReview;
+        public ClsCars(RentCarContext _context,IReview review)
         {
             context = _context;
+            ClsReview = review;
         }
         public TbCar ShowCar(int Id)
         {
@@ -54,6 +56,7 @@ namespace test1.Bl
                 }
                 return LstCars;
             }
+
             catch
             {
                 return new List<TbCar>();
@@ -100,7 +103,7 @@ namespace test1.Bl
                 return new List<TbCar>();
             }
         }
-        public bool DeleteCar(int Id)
+        public string DeleteCar(int Id)
         {
             try
             {
@@ -108,33 +111,74 @@ namespace test1.Bl
                 car.Status = "Deleted";
                 context.Entry(car).State = EntityState.Modified;
                 context.SaveChanges();
-                return true;
+                return "تم حذف السيارة ";
 
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
 
-        public List<TbCar> ShowSixCars(int Counter, string? userId)
+        public List<PageCarModel> ShowEightCars(int Counter, string? userId)
         {
             try
             {
                 Counter = (Counter - 1) * 6;
-                List <TbCar> LstCars=new List<TbCar>();
+                List<PageCarModel> carsWithReviews = new List<PageCarModel>();
+
+
                 if (userId.IsNullOrEmpty())
                 {
-                    LstCars = context.TbCars.Where(a => a.Status != "Deleted").Take(10).Skip(Counter).ToList();
+                    carsWithReviews = context.TbCars
+    .Where(a => a.Status != "Deleted" ).
+   Select(t => new PageCarModel
+   {
+       Id = t.Id,
+       Brand = t.Brand,
+       Model = t.Model,
+       Transmission = t.Transmission,
+       Status = t.Status,
+       City = t.City,
+       Color = t.Color,
+       Engine = t.Engine,
+       CreateDate = t.CreateDate,
+       KiloMetrage = t.KiloMetrage,
+       Img1 = t.Img1,
+       Comments = context.TbReviews.Count(r => r.CarId == t.Id)
+   }).Take(8).Skip(Counter).ToList();
+       
 
                 }
                 else
                 {
-                    LstCars = context.TbCars.Where(a => a.Status != "Deleted" && a.UserId==userId).Take(10).Skip(Counter).ToList();
+                   carsWithReviews = context.TbCars
+      .Where(t => t.Status != "Deleted" && t.UserId == userId)
+      .Select(t => new PageCarModel
+      {
+          Id = t.Id,
+          Brand = t.Brand,
+          Model = t.Model,
+          Transmission = t.Transmission,
+          Status = t.Status,
+          City = t.City,
+          Color = t.Color,
+          Engine = t.Engine,
+          CreateDate = t.CreateDate,
+          KiloMetrage = t.KiloMetrage,
+          Img1 = t.Img1,
+          Comments = context.TbReviews.Count(r => r.CarId == t.Id),
+          UserId=t.UserId
+      }).Take(8).Skip(Counter).ToList();
+
 
                 }
-                return LstCars;
+
+                return carsWithReviews;
             }
             catch
             {
-                return new List<TbCar>();
+                return new List<PageCarModel>();
             }
         }
 
@@ -174,7 +218,7 @@ namespace test1.Bl
             }
         }
 
-        public bool Sold(int id,string userid)
+        public string Sold(int id,string userid)
         {
             try
             {
@@ -183,27 +227,17 @@ namespace test1.Bl
                 {
 
                     car.Sold = 1;
-                    return true;
+                    context.SaveChanges();
+                    return "تم تحديث الحالة";
                 }
-                else return false;
+                else return "يجب ان تكون مالك السيارة";
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                return ex.Message;
             }
         }
 
-        public TbCar GetById(int id)
-        {
-            try
-            {
-                var car = context.TbCars.FirstOrDefault(a => a.Id == id);
-                return car;
-            }
-            catch
-            {
-                return new TbCar();
-            }
-        }
+    
     }
 }

@@ -6,6 +6,8 @@ namespace rent.Models
     public class Register
     {
         [Required(ErrorMessage = "Please enter the user name")]
+        [StringLength(17, ErrorMessage = "the password must be between 17 and 3", MinimumLength = 3)]
+
         public string Name { get; set; }
  
         [EmailAddress]

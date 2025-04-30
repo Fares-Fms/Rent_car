@@ -445,7 +445,7 @@ namespace test1.Migrations
 
                     b.Property<int>("IsPublic")
                         .HasColumnType("int")
-                        .HasColumnName("Is_Public");
+                        .HasColumnName("IsPublic");
 
                     b.Property<string>("Name")
                         .IsRequired()

@@ -34,7 +34,7 @@ public partial class RentCarContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<TbAd>(entity =>
         {
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+              .ValueGeneratedOnAdd()
                 .HasColumnName("ID");
             entity.Property(e => e.CreateDate)
                 .HasColumnType("datetime")
@@ -90,7 +90,7 @@ public partial class RentCarContext : IdentityDbContext<ApplicationUser>
             entity.ToTable("TbCar");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .ValueGeneratedOnAdd()
                 .HasColumnName("ID");
             entity.Property(e => e.Brand).HasMaxLength(20);
             entity.Property(e => e.City)
@@ -139,25 +139,33 @@ public partial class RentCarContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<TbReview>(entity =>
         {
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .UseIdentityColumn()
                 .HasColumnName("ID");
+
             entity.Property(e => e.ContentMsg)
                 .HasMaxLength(150)
                 .HasColumnName("Content_MSG");
+
             entity.Property(e => e.CreatedDate)
                 .HasColumnType("datetime")
                 .HasColumnName("Created_date");
-            entity.Property(e => e.IsPublic).HasColumnName("Is_Public");
+
+            entity.Property(e => e.IsPublic)
+                .HasMaxLength(10)
+                .HasColumnName("Is_Public");
+
             entity.Property(e => e.Name)
-                .HasMaxLength(15)
+                .HasMaxLength(20)
                 .IsFixedLength();
+
             entity.Property(e => e.UpdatedDate)
                 .HasColumnType("datetime")
                 .HasColumnName("updated_date");
-            entity.Property(e => e.UserId)
-                .HasMaxLength(450)
-                .HasColumnName("User_ID");
+
+            entity.Property(e => e.CarId)
+                .HasColumnName("CarId"); // ✅ سميه اسمه الحقيقي وخلي النوع int
         });
+
 
         modelBuilder.Entity<TbSetting>(entity =>
         {

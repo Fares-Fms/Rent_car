@@ -5,11 +5,14 @@ namespace test1.Bl
 {
     public interface IReview
     {
-        public List<TbReview> GetReviews(string? id);
+        public List<TbReview> GetReviews(int? id);
        public List<TbReview> Get5Stars();
-        public bool AddReview(TbReview review);
-        public bool ApproveReview(int id);
-        public bool DeclineReview(int id);
+        public string AddReview(TbReview review, int carId);
+        public string ApproveReview(int id);
+        public string DeclineReview(int id);
+        public int? Count();
+        public List<TbReview> GetReviewsAdmin();
+
     }
     public class ClsReview : IReview
     {
@@ -19,54 +22,67 @@ namespace test1.Bl
             context = carContext;   
         }
 
-        public bool AddReview(TbReview review)
+        public string AddReview(TbReview review, int carId)
         {
             try
             {
-                var NewReview = context.TbReviews.Add(review);
+                var car = context.TbCars.FirstOrDefault(c => c.Id == carId);
+                if (car == null)
+                {
+                   
+                    return "please comment on a car";
+                }
+
+                review.CarId = car.Id;
+                review.CreatedDate = DateTime.Now;
+                review.IsPublic = "OnHold";
+
+                context.TbReviews.Add(review);
                 context.SaveChanges();
-                return true;
+                return "the message has been sent to the admin";
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+ 
+                return ex.ToString();
             }
         }
 
-      
 
-        public bool ApproveReview(int id)
+
+
+        public string ApproveReview(int id)
         {
             try
             {
                 var review = context.TbReviews.FirstOrDefault(review => review.Id == id);
-                review.IsPublic = 1;
+                review.IsPublic = "Approved";
                 context.Entry(review).State = EntityState.Modified;
 
                 context.SaveChanges();
-                return true;
+                return "The message Has been approved";
             }
-            catch { return false; }
+            catch(Exception ex) { return ex.ToString(); }
         }
-        public bool DeclineReview(int id)
+        public string DeclineReview(int id)
         {
             try
             {
                 var review = context.TbReviews.FirstOrDefault(review => review.Id == id);
-                review.IsPublic = 2;
+                review.IsPublic = "Declined";
                 context.Entry(review).State = EntityState.Modified;
 
                 context.SaveChanges();
-                return true;
+                return "The message Has been Declined";
             }
-            catch { return false; }
+            catch (Exception ex) { return ex.ToString(); }
         }
 
         public List<TbReview> Get5Stars()
         {
             try
             {
-                var reviews=context.TbReviews.Where(a=>a.Stars>=4 && a.IsPublic==1).Take(7).ToList();
+                var reviews=context.TbReviews.Where(a=>a.Stars>=4 && a.IsPublic=="Approved").Take(7).ToList();
                 return reviews;
             }
             catch
@@ -75,16 +91,44 @@ namespace test1.Bl
             }
         }
 
-        public List<TbReview> GetReviews(string? id)
+        public List<TbReview> GetReviews(int? id)
         {
             try
             {
-                var reviews = context.TbReviews.Where(a => a.UserId== id && a.IsPublic == 1).Take(5).ToList();
+                var reviews = context.TbReviews.Where(a => a.CarId== id && a.IsPublic == "Approved").ToList();
                 return reviews;
             }
             catch
             {
                 return new List<TbReview>();
+            }
+        }
+        public List<TbReview> GetReviewsAdmin()
+        {
+            try
+            {
+                var reviews = context.TbReviews.Where(a => ( a.IsPublic == "Approved"||a.IsPublic=="OnHold")).Take(8).ToList();
+                return reviews;
+            }
+            catch
+            {
+                return new List<TbReview>();
+            }
+        }
+        public int? Count()
+        {
+            try
+            {
+                var Count = context.TbReviews.Where(a =>  a.IsPublic == "Approved" || a.IsPublic=="OnHold").Count();
+                if (Count==0)
+                {
+                    return null;
+                }
+                return Count;
+            }
+            catch
+            {
+                return null ;
             }
         }
     }

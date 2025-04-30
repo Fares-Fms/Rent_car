@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 using test1.Bl;
 using test1.Models;
@@ -21,41 +23,49 @@ namespace test1
             })
             .AddJwtBearer(options =>
             {
-            var config = builder.Configuration.GetSection("JwtSettings");
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = config["Issuer"],
-        ValidAudience = config["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Key"]))
-    };
-});
+                var config = builder.Configuration.GetSection("JwtSettings");
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    RoleClaimType = ClaimTypes.Role,
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+                    ValidAudience = builder.Configuration["JwtSettings:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"]))
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        Console.WriteLine($"Authentication failed: {context.Exception}");
+                        return Task.CompletedTask;
+                    }
+                };
+            });
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend",
-                    builder =>
+                    policy =>
                     {
-                        builder.WithOrigins("http://localhost:3000") // „Ì‰ „”„ÊÕ ÌÊ’·ﬂ
-                               .AllowAnyHeader()                     // „”„ÊÕ Ì—”· √Ì Header
-                               .AllowAnyMethod()
-                        .AllowAnyHeader();
-                        // GET, POST, PUT, DELETE...
+                        policy.WithOrigins("http://localhost:3000")
+                              .AllowAnyMethod()
+                              .AllowAnyHeader()
+                              .AllowCredentials(); // ≈–« ⁄„  ” Œœ„ «·ﬂÊﬂÌ“ √Ê «·ÂÌœ—
                     });
             });
-
             builder.Services.AddScoped<ICar, ClsCars>();
             builder.Services.AddScoped<IAd, ClsAd>();
             builder.Services.AddScoped<Isettings, ClsSettings>();
             builder.Services.AddScoped<IReview, ClsReview>();
-        
-            builder.Services.AddAuthorization(); // ·«  ‰”«Â
+
+            builder.Services.AddAuthorization();
             // Add services to the container.
             builder.Services.AddControllers();
             builder.Services.AddDbContext<RentCarContext>(options =>
-           options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+           options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
+           ServiceLifetime.Scoped);
 
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
@@ -66,33 +76,43 @@ namespace test1
                 options.User.RequireUniqueEmail = true;
             }).AddEntityFrameworkStores<RentCarContext>()
         .AddDefaultTokenProviders();
-            builder.Services.AddAuthorization(options =>
+       
+            builder.WebHost.ConfigureKestrel(options =>
             {
-                options.AddPolicy("admin", policy =>
-                    policy.RequireRole("Admin")); // √Ê «·«”„ Ì·Ì «” Œœ„ Â »«·œÊ—
+                options.ListenAnyIP(5059); // Listen to all IPs on port 5059
+            });
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.Events.OnRedirectToLogin = context =>
+                {
+                    context.Response.StatusCode = 401; // Unauthorized »œ·« „‰ 302
+                    return Task.CompletedTask;
+                };
             });
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-
-            app.UseHttpsRedirection();
+       
             app.UseStaticFiles();
-
+         /*   app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "Uploads")),
+                RequestPath = "/Uploads"
+            });*/
             app.UseRouting();
             app.UseCors("AllowFrontend");
-
+        
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
-          
+
             app.Run();
         }
     }

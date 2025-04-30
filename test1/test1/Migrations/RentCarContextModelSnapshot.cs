@@ -174,6 +174,14 @@ namespace test1.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(17)
+                        .HasColumnType("nvarchar(17)");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
@@ -280,7 +288,7 @@ namespace test1.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TbAds");
+                    b.ToTable("TbAds", (string)null);
                 });
 
             modelBuilder.Entity("test1.Models.TbBrand", b =>
@@ -313,14 +321,17 @@ namespace test1.Migrations
 
                     b.HasKey("BrandId");
 
-                    b.ToTable("TbBrands");
+                    b.ToTable("TbBrands", (string)null);
                 });
 
             modelBuilder.Entity("test1.Models.TbCar", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Brand")
                         .IsRequired()
@@ -364,13 +375,11 @@ namespace test1.Migrations
                         .IsFixedLength();
 
                     b.Property<string>("Img1")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("IMG1");
 
                     b.Property<string>("Img2")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("IMG2");
@@ -379,6 +388,9 @@ namespace test1.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("IMG3");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<int>("KiloMetrage")
                         .HasColumnType("int");
@@ -428,8 +440,15 @@ namespace test1.Migrations
             modelBuilder.Entity("test1.Models.TbReview", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CarId")
+                        .HasColumnType("int")
+                        .HasColumnName("CarId");
 
                     b.Property<string>("ContentMsg")
                         .IsRequired()
@@ -441,8 +460,8 @@ namespace test1.Migrations
                         .HasColumnType("datetime")
                         .HasColumnName("Created_date");
 
-                    b.Property<int>("IsPublic")
-                        .HasColumnType("int")
+                    b.Property<string>("IsPublic")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("Is_Public");
 
                     b.Property<string>("Name")
@@ -451,8 +470,9 @@ namespace test1.Migrations
                         .HasColumnType("nchar(15)")
                         .IsFixedLength();
 
-                    b.Property<int>("Phone")
-                        .HasColumnType("int");
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Stars")
                         .HasColumnType("int");
@@ -461,15 +481,9 @@ namespace test1.Migrations
                         .HasColumnType("datetime")
                         .HasColumnName("updated_date");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)")
-                        .HasColumnName("User_ID");
-
                     b.HasKey("Id");
 
-                    b.ToTable("TbReviews");
+                    b.ToTable("TbReviews", (string)null);
                 });
 
             modelBuilder.Entity("test1.Models.TbSetting", b =>
@@ -535,7 +549,7 @@ namespace test1.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.ToTable("TbSettings");
+                    b.ToTable("TbSettings", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
